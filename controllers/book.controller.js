@@ -1,0 +1,51 @@
+const Book = require('../models/books.model')
+
+const getBooks = async (req, res, next)=>{
+    try{
+        const books = await Book.find()
+        res.status(200).json(books)
+    }catch(error){
+        next (error)
+    }
+}
+
+const addBook = async (req, res, next)=>{
+    try{const {title, author, category, quantity} = req.body;
+    const newBook = new Book ({title, author, category, quantity})
+    await newBook.save();
+    return res.status(201).json({message: "New book added successfully", book: newBook})
+}catch(error){
+    next(error)
+}
+}
+
+const updateBook = async (req, res, next)=>{
+    try{
+        const {id} = req.params;
+        const { title, author, category, quantity, isAvailable } = req.body
+        const updatedbook = await Book.findByIdAndUpdate(id, {
+            title, author, category, quantity, isAvailable},{new: true}
+        );
+        if(updatedbook === null){
+            return res.status(404).json({message: "Book not found"}
+        )}
+        res.status(200).json({message: "Book updated successfully", book: updatedbook})
+
+    }catch(error){
+        next(error);
+    }
+}
+
+const deleteBook = async(req, res, next)=>{
+    try{const {id} = req.params;
+    const deletedBook = await Book.findByIdAndDelete(id)
+    if(!deletedBook){
+        return res.status(404).json({message: "Book not found"})
+    }
+    res.status(200).json({message: "Book deleted successfully"})
+}catch (error){
+    next(error);
+}
+}
+
+module.exports = {getBooks, addBook, updateBook, deleteBook}
