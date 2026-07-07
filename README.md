@@ -2,6 +2,9 @@
 
 A RESTful backend API for managing a library system built with Node.js, Express.js and MongoDB.
 
+## 🌐 Live API
+https://library-management-backend-production-d4ce.up.railway.app
+
 ## Features
 - User authentication (signup/login) with JWT tokens
 - Role based access control (admin/member)
@@ -38,8 +41,5 @@ A RESTful backend API for managing a library system built with Node.js, Express.
 ## Setup
 1. Clone the repository
 2. Run npm install
-3. Create .env file with:
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_secret_key
-   PORT=5000
+3. Create .env file with MONGO_URI, JWT_SECRET, PORT
 4. Run npm run dev
