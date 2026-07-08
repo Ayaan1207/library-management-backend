@@ -62,4 +62,21 @@ const borrowHistory = async(req, res, next)=>{
     }
 }
 
-module.exports = {borrowBook, returnBook, borrowHistory}
+const getMostBorrowedBooks = async(req, res, next)=>{
+    try{
+        const result = await Borrow.aggregate([
+    { $match: { status: 'borrowed' } },  // only borrowed records
+    { $group: { 
+        _id: '$bookId',                   // group by bookId
+        borrowCount: { $sum: 1 }          // count each occurrence
+    }},
+    { $sort: { borrowCount: -1 }},        // highest first
+    { $limit: 5 }                         // top 5 only
+    ])
+    return res.status(200).json({message: "Most borrowed book fetched successfully!", data: result})
+    }catch(error){
+        next(error)
+    }
+}
+
+module.exports = {borrowBook, returnBook, borrowHistory, getMostBorrowedBooks}
