@@ -2,8 +2,16 @@ const Book = require('../models/books.model')
 
 const getBooks = async (req, res, next)=>{
     try{
-        const books = await Book.find()
-        res.status(200).json(books)
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page-1) * limit;
+        const totalBooks = await Book.countDocuments();
+        const books = await Book.find().skip(skip).limit(limit);
+        res.status(200).json({
+            totalBooks, 
+            totalPages: Math.ceil(totalBooks/limit),
+            currentPage: page,
+            books})
     }catch(error){
         next (error)
     }
