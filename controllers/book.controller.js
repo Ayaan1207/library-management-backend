@@ -56,4 +56,18 @@ const deleteBook = async(req, res, next)=>{
 }
 }
 
-module.exports = {getBooks, addBook, updateBook, deleteBook}
+const getBooksByCategory = async (req, res, next)=>{
+    try{
+        const result = await Book.aggregate([
+            { $group: {
+            _id: '$category',
+             count: { $sum: 1 }
+            }}
+
+        ])
+        return res.status(200).json({message: "Book count is: ", data: result})
+    }catch (error){
+        next(error)
+    }
+}
+module.exports = {getBooks, addBook, updateBook, deleteBook, getBooksByCategory}
