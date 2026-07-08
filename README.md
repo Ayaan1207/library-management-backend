@@ -12,6 +12,8 @@ https://library-management-backend-production-d4ce.up.railway.app
 - Members can borrow and return books
 - Book availability tracked automatically when borrowed/returned
 - Borrowing history for each member
+- Pagination support for book listing
+- Aggregation — most borrowed books and books by category
 
 ## Tech Stack
 - Node.js
@@ -28,7 +30,8 @@ https://library-management-backend-production-d4ce.up.railway.app
 - POST /api/auth/login
 
 ### Books
-- GET /api/books (public)
+- GET /api/books (public, supports pagination ?page=1&limit=10)
+- GET /api/books/getBooksByCategory (public)
 - POST /api/books/add (admin only)
 - PATCH /api/books/:id (admin only)
 - DELETE /api/books/:id (admin only)
@@ -37,6 +40,7 @@ https://library-management-backend-production-d4ce.up.railway.app
 - POST /api/borrow/borrow (member)
 - PATCH /api/borrow/:id/return (member)
 - GET /api/borrow/history (member)
+- GET /api/borrow/most-borrowed (public)
 
 ## Setup
 1. Clone the repository
