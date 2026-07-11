@@ -4,6 +4,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const bookRoutes = require('./routes/bookRoutes');
 const borrowRoutes = require('./routes/borrowRoutes');
+const redisClient = require('./config/redis')
 const PORT = process.env.PORT || 5000;
 
 const app = express();
