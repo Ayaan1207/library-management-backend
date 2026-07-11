@@ -14,6 +14,8 @@ https://library-management-backend-production-d4ce.up.railway.app
 - Borrowing history for each member
 - Pagination support for book listing
 - Aggregation — most borrowed books and books by category
+- Redis caching for frequently accessed data
+- Rate limiting — 100 requests per 15 minutes globally, 5 login attempts per 15 minutes
 
 ## Tech Stack
 - Node.js
@@ -22,12 +24,14 @@ https://library-management-backend-production-d4ce.up.railway.app
 - JWT (jsonwebtoken)
 - bcryptjs
 - express-validator
+- Redis (ioredis)
+- express-rate-limit
 
 ## API Endpoints
 
 ### Auth
 - POST /api/auth/signup
-- POST /api/auth/login
+- POST /api/auth/login (rate limited — 5 attempts per 15 min)
 
 ### Books
 - GET /api/books (public, supports pagination ?page=1&limit=10)
@@ -44,6 +48,8 @@ https://library-management-backend-production-d4ce.up.railway.app
 
 ## Setup
 1. Clone the repository
-2. Run npm install
-3. Create .env file with MONGO_URI, JWT_SECRET, PORT
-4. Run npm run dev
+2. Install Redis: sudo apt install redis-server
+3. Start Redis: sudo service redis start
+4. Run npm install
+5. Create .env file with MONGO_URI, JWT_SECRET, PORT
+6. Run npm run dev
