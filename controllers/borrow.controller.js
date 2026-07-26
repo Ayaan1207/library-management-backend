@@ -1,30 +1,41 @@
 const Borrow = require('../models/borrow.model.js')
-const Book = require('../models/books.model')
+const Book = require('../models/books.model');
+const calculateFine = require('../utils/calculateFine')
+const borrowBook = async (req, res, next) => {
+  try {
+    const { bookId } = req.body;
+    const userId = req.user.userId;
 
-const borrowBook = async (req, res, next)=>{
-    try{const {bookId} = req.body
-    const userId = req.user.userId
-    const borrowed = await Book.findById(bookId);
-    if(!borrowed){
-        return res.status(404).json({message: "Book not found"})
-    }
-    if(!borrowed.isAvailable){
-        return res.status(404).json({message: "Book not available"})
+    const borrowed = await Book.findOneAndUpdate(
+      { _id: bookId, isAvailable: true, quantity: { $gt: 0 } },
+      { $inc: { quantity: -1 } },
+      { new: true }
+    );
 
+    if (!borrowed) {
+      return res.status(400).json({ message: "Book not available" });
     }
-    const availability = await Book.findByIdAndUpdate(bookId, {
-        isAvailable: false,
-        $inc: {quantity: -1}
-    })
-    const newBorrow = new Borrow({
-        userId, bookId, status: 'borrowed'
+
+    if (borrowed.quantity === 0) {
+      borrowed.isAvailable = false;
+      await borrowed.save();
+    }
+
+    // NEW: actually create the borrow record
+    const newBorrow = await Borrow.create({
+      userId,
+      bookId,
+      status: 'borrowed',
+      borrowDate: new Date()
     });
-    await newBorrow.save()
-    res.status(201).json({message:"Book borrowed successfully", borrow: newBorrow})
-} catch (error){
+
+    // NEW: send a response back
+    return res.status(201).json({ message: "Book borrowed successfully", borrow: newBorrow });
+
+  } catch (error) {
     next(error);
-}
-}
+  }
+};
 
 const returnBook = async (req, res, next)=>{
     try{
@@ -37,16 +48,20 @@ const returnBook = async (req, res, next)=>{
         if(returnStatus.status === 'returned'){
             return res.status(400).json({message:"Book already returned"})
         }
+        const returnDate = new Date(); // NEW: capture the return moment once, reuse it below
+        const fine = calculateFine(returnStatus.borrowDate, returnDate); // NEW: calculate fine
+
         const borrowRecord = await Borrow.findByIdAndUpdate(borrowId, {
             status: "returned",
-            returnDate: Date.now()
+            returnDate: returnDate, // CHANGED: use the same returnDate variable, not Date.now()
+            fine: fine // NEW: save the calculated fine
         })
         await Book.findByIdAndUpdate(returnStatus.bookId,{
             isAvailable: true,
             $inc: {quantity:1}
         })
-        res.status(200).json({message: "Book returned successfully"})
-
+        res.status(200).json({message: "Book returned successfully", fine: fine})
+         
     } catch(error){
         next(error)
     }

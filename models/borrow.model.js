@@ -18,6 +18,10 @@ const borrowSchema = new mongoose.Schema({
     returnDate: {
         type: Date
     },
+     fine: {
+        type: Number,
+        default: 0
+     },
     status:{
         type:String,
         enum:['borrowed', 'returned'],
