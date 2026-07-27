@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Reading Room — Library Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1B2A41;
+    --ink-light: #2A3F5C;
+    --parchment: #E8E2D0;
+    --parchment-light: #F2EDE0;
+    --card: #FBF8F1;
+    --brass: #A9822C;
+    --brass-dark: #8A6A22;
+    --stamp-red: #8B3A3A;
+    --forest: #3F5D4E;
+    --charcoal: #2B2B26;
+    --line: #C9BFA5;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--parchment);
+    color: var(--charcoal);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  .call-number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--brass-dark);
+    letter-spacing: 0.5px;
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Lora', serif;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    background: var(--ink);
+    color: var(--parchment-light);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 3px solid var(--brass);
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand h1 { font-size: 22px; font-style: italic; color: #fff; }
+  .brand .call-number { color: var(--brass); opacity: 0.9; }
+
+  nav { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .nav-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: var(--parchment-light);
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--brass); }
+  .nav-btn.active { background: var(--brass); border-color: var(--brass); color: var(--ink); font-weight: 600; }
+
+  .user-chip {
+    font-size: 12px;
+    color: var(--parchment-light);
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .role-tag {
+    background: var(--brass);
+    color: var(--ink);
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .section-head h2 { font-size: 26px; font-style: italic; }
+  .section-sub { font-size: 13px; color: var(--brass-dark); font-family: 'IBM Plex Mono', monospace; }
+
+  /* ---------- Filter bar ---------- */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  select, input[type=text], input[type=email], input[type=password], input[type=number], input[type=date] {
+    font-family: 'Inter', sans-serif;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--card);
+    color: var(--charcoal);
+    font-size: 13px;
+  }
+  select:focus, input:focus {
+    outline: 2px solid var(--brass);
+    outline-offset: 1px;
+  }
+
+  /* ---------- Book grid / catalog cards ---------- */
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 18px;
+  }
+  .book-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+  }
+  .book-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 16px;
+    width: 34px; height: 6px;
+    background: var(--brass);
+    border-radius: 0 0 3px 3px;
+  }
+  .book-title { font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.3; margin-top: 6px; }
+  .book-author { font-size: 13px; color: #6b6558; font-style: italic; }
+  .book-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .category-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--forest);
+    border: 1px solid var(--forest);
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+  .avail-dot { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.avail { background: var(--forest); }
+  .dot.unavail { background: var(--stamp-red); }
+
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 14px;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-brass { background: var(--brass); color: var(--ink); }
+  .btn-brass:hover { background: var(--brass-dark); }
+  .btn-outline { background: transparent; border: 1px solid var(--ink); color: var(--ink); }
+  .btn-outline:hover { background: var(--ink); color: #fff; }
+  .btn-danger { background: transparent; border: 1px solid var(--stamp-red); color: var(--stamp-red); }
+  .btn-danger:hover { background: var(--stamp-red); color: #fff; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-sm { padding: 6px 10px; font-size: 12px; }
+
+  /* ---------- Auth forms ---------- */
+  .auth-wrap { display: flex; justify-content: center; padding-top: 20px; }
+  .auth-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 36px;
+    width: 380px;
+    box-shadow: 0 2px 14px rgba(27,42,65,0.08);
+  }
+  .auth-card h2 { font-size: 22px; font-style: italic; margin-bottom: 4px; }
+  .auth-card .section-sub { margin-bottom: 22px; }
+  .field { margin-bottom: 14px; display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: var(--brass-dark); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+  .auth-toggle { margin-top: 16px; font-size: 13px; text-align: center; color: #6b6558; }
+  .auth-toggle a { color: var(--brass-dark); cursor: pointer; text-decoration: underline; }
+  .form-msg { font-size: 13px; padding: 8px 10px; border-radius: 3px; margin-bottom: 12px; display: none; }
+  .form-msg.error { background: #f4dcdc; color: var(--stamp-red); display: block; }
+  .form-msg.success { background: #dce8e0; color: var(--forest); display: block; }
+
+  /* ---------- Borrowed books / library card ---------- */
+  .ledger-list { display: flex; flex-direction: column; gap: 14px; }
+  .ledger-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .ledger-info .book-title { margin-top: 0; }
+  .stamp {
+    font-family: 'IBM Plex Mono', monospace;
+    border: 2px solid var(--stamp-red);
+    color: var(--stamp-red);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transform: rotate(-4deg);
+    white-space: nowrap;
+    opacity: 0.85;
+  }
+  .stamp.returned { border-color: var(--forest); color: var(--forest); }
+  .fine-tag { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--stamp-red); }
+
+  /* ---------- Admin panel ---------- */
+  .admin-form {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .admin-form .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .admin-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 5px; overflow: hidden; }
+  .admin-table th {
+    background: var(--ink);
+    color: var(--parchment-light);
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .admin-table td { padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .admin-actions { display: flex; gap: 6px; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #8a8371;
+  }
+  .empty-state .display { font-size: 20px; font-style: italic; margin-bottom: 8px; color: var(--ink); }
+
+  .config-banner {
+    background: var(--ink-light);
+    color: var(--parchment-light);
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 8px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .config-banner input {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 4px 8px;
+    width: 260px;
+  }
+
+  .toast-wrap {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 340px;
+  }
+  .toast {
+    background: var(--ink);
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    border-left: 4px solid var(--brass);
+    animation: slideIn 0.2s ease;
+  }
+  .toast.error { border-left-color: var(--stamp-red); }
+  .toast.success { border-left-color: var(--forest); }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 14px 16px; }
+    main { padding: 24px 14px 60px; }
+    .admin-form .grid-2 { grid-template-columns: 1fr; }
+    .config-banner { padding: 8px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<div class="config-banner">
+  <span>API BASE URL —</span>
+  <input type="text" id="apiBaseInput" value="http://localhost:5000/api" />
+  <span id="connStatus">not checked</span>
+</div>
+
+<header>
+  <div class="brand">
+    <h1>The Reading Room</h1>
+    <span class="call-number" id="headerTagline">LMS · 2026</span>
+  </div>
+  <nav id="navBar">
+    <button class="nav-btn active" data-view="catalog">Catalog</button>
+    <button class="nav-btn" data-view="ledger" id="navLedger" style="display:none;">My Books</button>
+    <button class="nav-btn" data-view="admin" id="navAdmin" style="display:none;">Admin</button>
+    <button class="nav-btn" data-view="auth" id="navAuth">Sign In</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- CATALOG VIEW -->
+  <section class="view active" id="view-catalog">
+    <div class="section-head">
+      <div>
+        <h2>Catalog</h2>
+        <div class="section-sub">browse every title on the shelf</div>
+      </div>
+      <div class="user-chip" id="userChip"></div>
+    </div>
+    <div class="filter-bar">
+      <select id="categoryFilter">
+        <option value="">All categories</option>
+        <option>Fiction</option>
+        <option>Non-Fiction</option>
+        <option>Science</option>
+        <option>History</option>
+        <option>Biography</option>
+        <option>Children</option>
+        <option>Fantasy</option>
+        <option>Mystery</option>
+        <option>Romance</option>
+        <option>Horror</option>
+      </select>
+      <input type="text" id="searchInput" placeholder="Search by title..." style="min-width:220px;" />
+      <button class="btn btn-outline btn-sm" onclick="loadBooks()">Refresh</button>
+    </div>
+    <div class="catalog-grid" id="catalogGrid"></div>
+  </section>
+
+  <!-- AUTH VIEW -->
+  <section class="view" id="view-auth">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div id="loginFormWrap">
+          <h2>Welcome back</h2>
+          <div class="section-sub">sign in to borrow &amp; return books</div>
+          <div class="form-msg" id="loginMsg"></div>
+          <div class="field"><label>Email or Username</label><input type="text" id="loginIdentifier" placeholder="you@example.com" /></div>
+          <div class="field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••" /></div>
+          <button class="btn btn-brass" style="width:100%;" onclick="doLogin()">Sign In</button>
+          <div class="auth-toggle">New here? <a onclick="toggleAuthForm()">Create an account</a></div>
+        </div>
+        <div id="signupFormWrap" style="display:none;">
+          <h2>Get a library card</h2>
+          <div class="section-sub">create your account</div>
+          <div class="form-msg" id="signupMsg"></div>
+          <div class="field"><label>Full Name</label><input type="text" id="suName" /></div>
+          <div class="field"><label>Username</label><input type="text" id="suUsername" /></div>
+          <div class="field"><label>Email</label><input type="email" id="suEmail" /></div>
+          <div class="field"><label>Date of Birth</label><input type="date" id="suDob" /></div>
+          <div class="field"><label>Password</label><input type="password" id="suPassword" /></div>
+          <button class="btn btn-brass" style="width:100%;" onclick="doSignup()">Create Account</button>
+          <div class="auth-toggle">Already have a card? <a onclick="toggleAuthForm()">Sign in</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEDGER VIEW (my borrowed books) -->
+  <section class="view" id="view-ledger">
+    <div class="section-head">
+      <div>
+        <h2>My Borrowed Books</h2>
+        <div class="section-sub">your active library ledger</div>
+      </div>
+    </div>
+    <div class="ledger-list" id="ledgerList"></div>
+  </section>
+
+  <!-- ADMIN VIEW -->
+  <section class="view" id="view-admin">
+    <div class="section-head">
+      <div>
+        <h2>Admin Desk</h2>
+        <div class="section-sub">manage the shelf</div>
+      </div>
+    </div>
+
+    <div class="admin-form">
+      <h3 style="font-size:16px; margin-bottom:14px;">Add a new title</h3>
+      <div class="form-msg" id="adminAddMsg"></div>
+      <div class="grid-2">
+        <div class="field"><label>Title</label><input type="text" id="newTitle" /></div>
+        <div class="field"><label>Author</label><input type="text" id="newAuthor" /></div>
+        <div class="field"><label>Quantity</label><input type="number" id="newQty" min="0" value="1" /></div>
+        <div class="field">
+          <label>Category</label>
+          <select id="newCategory">
+            <option>Fiction</option><option>Non-Fiction</option><option>Science</option>
+            <option>History</option><option>Biography</option><option>Children</option>
+            <option>Fantasy</option><option>Mystery</option><option>Romance</option><option>Horror</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:14px;"><button class="btn btn-brass" onclick="addBook()">Add Book</button></div>
+    </div>
+
+    <table class="admin-table">
+      <thead>
+        <tr><th>Title</th><th>Author</th><th>Category</th><th>Qty</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="adminTableBody"></tbody>
+    </table>
+  </section>
+
+</main>
+
+<script>
+  // ---------- Config ----------
+  let API_BASE = document.getElementById('apiBaseInput').value;
+  document.getElementById('apiBaseInput').addEventListener('change', (e) => {
+    API_BASE = e.target.value.replace(/\/$/, '');
+    checkConnection();
+  });
+
+  // ---------- State ----------
+  let token = localStorage.getItem('lms_token') || null;
+  let currentUser = null; // decoded from JWT payload
+
+  function decodeJWT(t) {
+    try {
+      const payload = t.split('.')[1];
+      return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    } catch (e) { return null; }
+  }
+
+  function refreshAuthState() {
+    if (token) {
+      currentUser = decodeJWT(token);
+    } else {
+      currentUser = null;
+    }
+    const loggedIn = !!currentUser;
+    document.getElementById('navLedger').style.display = loggedIn ? 'inline-block' : 'none';
+    document.getElementById('navAdmin').style.display = (loggedIn && currentUser.role === 'admin') ? 'inline-block' : 'none';
+    document.getElementById('navAuth').textContent = loggedIn ? 'Sign Out' : 'Sign In';
+    document.getElementById('userChip').innerHTML = loggedIn
+      ? `Signed in as <b>${currentUser.username || currentUser.email || 'user'}</b> <span class="role-tag">${currentUser.role || 'user'}</span>`
+      : '';
+  }
+
+  // ---------- View switching ----------
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`.nav-btn[data-view="${name}"]`);
+    if (btn) btn.classList.add('active');
+    if (name === 'ledger') loadLedger();
+    if (name === 'admin') loadAdminTable();
+  }
+
+  document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => showView(btn.dataset.view));
+  });
+
+  document.getElementById('navAuth').addEventListener('click', () => {
+    if (currentUser) {
+      token = null;
+      localStorage.removeItem('lms_token');
+      refreshAuthState();
+      showView('catalog');
+    } else {
+      showView('auth');
+    }
+  });
+
+  function toggleAuthForm() {
+    const l = document.getElementById('loginFormWrap');
+    const s = document.getElementById('signupFormWrap');
+    l.style.display = l.style.display === 'none' ? 'block' : 'none';
+    s.style.display = s.style.display === 'none' ? 'block' : 'none';
+  }
+
+  // ---------- Connection check ----------
+  async function checkConnection() {
+    const status = document.getElementById('connStatus');
+    status.textContent = 'checking...';
+    try {
+      const res = await fetch(`${API_BASE}/books`);
+      status.textContent = res.ok ? '● connected' : `● reachable (status ${res.status})`;
+    } catch (e) {
+      status.textContent = '● unreachable — check API base URL / CORS';
+    }
+  }
+
+  // ---------- Auth ----------
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'form-msg ' + type;
+  }
+
+  async function doSignup() {
+    const body = {
+      name: document.getElementById('suName').value,
+      username: document.getElementById('suUsername').value,
+      email: document.getElementById('suEmail').value,
+      DOB: document.getElementById('suDob').value,
+      password: document.getElementById('suPassword').value
+    };
+    try {
+      const res = await fetch(`${API_BASE}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg('signupMsg', data.message || 'Signup failed', 'error'); return; }
+      showMsg('signupMsg', 'Account created — you can sign in now.', 'success');
+      setTimeout(toggleAuthForm, 900);
+    } catch (e) {
+      showMsg('signupMsg', 'Could not reach the server. Check the API base URL above.', 'error');
+    }
+  }
+
+  async function doLogin() {
+    const identifier = document.getElementById('loginIdentifier').value;
+    const password = document.getElementById('loginPassword').value;
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: identifier, username: identifier, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg('loginMsg', data.message || 'Login failed', 'error'); return; }
+      token = data.token || data.accessToken;
+      localStorage.setItem('lms_token', token);
+      refreshAuthState();
+      showMsg('loginMsg', 'Signed in successfully.', 'success');
+      setTimeout(() => showView('catalog'), 500);
+    } catch (e) {
+      showMsg('loginMsg', 'Could not reach the server. Check the API base URL above.', 'error');
+    }
+  }
+
+  function authHeaders() {
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
+  // ---------- Catalog ----------
+  async function loadBooks() {
+    const grid = document.getElementById('catalogGrid');
+    grid.innerHTML = `<div class="empty-state">Loading the shelf…</div>`;
+    const thisRequestId = ++catalogRequestId; // mark this as the latest request
+    try {
+      const res = await fetch(`${API_BASE}/books`);
+      const data = await res.json();
+
+      if (thisRequestId !== catalogRequestId) return; // a newer request already started, discard this stale one
+
+      let books = data.books || data.data || data;
+      if (!Array.isArray(books)) books = [];
+
+      const cat = document.getElementById('categoryFilter').value;
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      books = books.filter(b =>
+        (!cat || b.category === cat) &&
+        (!search || (b.title || '').toLowerCase().includes(search))
+      );
+
+      if (books.length === 0) {
+        grid.innerHTML = `<div class="empty-state"><div class="display">The shelf is empty</div>No titles match right now — try a different filter, or add one from the Admin Desk.</div>`;
+        return;
+      }
+
+      grid.innerHTML = books.map(b => `
+        <div class="book-card">
+          <div class="call-number">QTY-${(b.quantity ?? 0)}</div>
+          <div class="book-title">${escapeHtml(b.title)}</div>
+          <div class="book-author">${escapeHtml(b.author || '')}</div>
+          <div class="book-meta">
+            <span class="category-tag">${escapeHtml(b.category || '')}</span>
+            <span class="avail-dot"><span class="dot ${b.isAvailable ? 'avail' : 'unavail'}"></span>${b.isAvailable ? 'Available' : 'Checked out'}</span>
+          </div>
+          <button class="btn btn-brass btn-sm" style="margin-top:8px;" ${!b.isAvailable ? 'disabled' : ''} onclick="borrowBook('${b._id}', this)">
+            ${b.isAvailable ? 'Borrow this book' : 'Unavailable'}
+          </button>
+        </div>
+      `).join('');
+    } catch (e) {
+      grid.innerHTML = `<div class="empty-state"><div class="display">Couldn't load the catalog</div>Check the API base URL banner above and make sure your backend is running.</div>`;
+    }
+  }
+
+  // ---------- Toast notifications (replaces alert()) ----------
+  function showToast(msg, type = 'success') {
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  // Tracks the most recent catalog fetch so overlapping requests
+  // (e.g. from rapid clicks) can't let an older response overwrite a newer one.
+  let catalogRequestId = 0;
+
+  async function borrowBook(bookId, btnEl) {
+    if (!currentUser) { showView('auth'); return; }
+    if (btnEl.disabled) return; // guard against double-click before disable takes effect
+
+    btnEl.disabled = true;
+    const originalText = btnEl.textContent;
+    btnEl.textContent = 'Borrowing…';
+
+    try {
+      const res = await fetch(`${API_BASE}/borrow/borrow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ bookId })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.message || 'Could not borrow this book', 'error');
+        btnEl.disabled = false;
+        btnEl.textContent = originalText;
+        return;
+      }
+      showToast('Borrowed successfully — check "My Books" for your ledger.', 'success');
+      loadBooks(); // refresh so the updated quantity/availability shows immediately
+    } catch (e) {
+      showToast('Could not reach the server.', 'error');
+      btnEl.disabled = false;
+      btnEl.textContent = originalText;
+    }
+  }
+
+  document.getElementById('categoryFilter').addEventListener('change', loadBooks);
+  document.getElementById('searchInput').addEventListener('input', debounce(loadBooks, 300));
+
+  function debounce(fn, ms) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  }
+
+  // ---------- Ledger (borrowed books) ----------
+  async function loadLedger() {
+    const list = document.getElementById('ledgerList');
+    list.innerHTML = `<div class="empty-state">Loading your ledger…</div>`;
+    try {
+      const res = await fetch(`${API_BASE}/borrow/history`, { headers: authHeaders() });
+      const data = await res.json();
+      let history = data.history || data.data || [];
+      if (!Array.isArray(history)) history = [];
+
+      if (history.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="display">No borrowed books yet</div>Head to the Catalog to borrow your first title.</div>`;
+        return;
+      }
+
+      list.innerHTML = history.map(h => {
+        const book = h.bookId || {};
+        const returned = h.status === 'returned';
+        return `
+        <div class="ledger-card">
+          <div class="ledger-info">
+            <div class="book-title">${escapeHtml(book.title || 'Untitled')}</div>
+            <div class="book-author">${escapeHtml(book.author || '')}</div>
+            ${h.fine ? `<div class="fine-tag">Fine: ₹${h.fine}</div>` : ''}
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div class="stamp ${returned ? 'returned' : ''}">${returned ? 'Returned' : 'Borrowed'}</div>
+            ${!returned ? `<button class="btn btn-outline btn-sm" onclick="returnBook('${h._id}')">Return</button>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      list.innerHTML = `<div class="empty-state"><div class="display">Couldn't load your ledger</div>Make sure you're signed in and the server is reachable.</div>`;
+    }
+  }
+
+  async function returnBook(borrowId) {
+    try {
+      const res = await fetch(`${API_BASE}/borrow/${borrowId}/return`, {
+        method: 'PATCH',
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.message || 'Could not return this book', 'error'); return; }
+      showToast(`Returned successfully.${data.fine ? ' Fine: ₹' + data.fine : ''}`, 'success');
+      loadLedger();
+    } catch (e) {
+      showToast('Could not reach the server.', 'error');
+    }
+  }
+
+  // ---------- Admin ----------
+  async function addBook() {
+    const body = {
+      title: document.getElementById('newTitle').value,
+      author: document.getElementById('newAuthor').value,
+      quantity: Number(document.getElementById('newQty').value),
+      category: document.getElementById('newCategory').value
+    };
+    try {
+      const res = await fetch(`${API_BASE}/books/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg('adminAddMsg', data.message || 'Could not add book', 'error'); return; }
+      showMsg('adminAddMsg', 'Book added to the shelf.', 'success');
+      document.getElementById('newTitle').value = '';
+      document.getElementById('newAuthor').value = '';
+      document.getElementById('newQty').value = 1;
+      loadAdminTable();
+    } catch (e) {
+      showMsg('adminAddMsg', 'Could not reach the server.', 'error');
+    }
+  }
+
+  async function loadAdminTable() {
+    const body = document.getElementById('adminTableBody');
+    body.innerHTML = `<tr><td colspan="6">Loading…</td></tr>`;
+    try {
+      const res = await fetch(`${API_BASE}/books`);
+      const data = await res.json();
+      let books = data.books || data.data || data;
+      if (!Array.isArray(books)) books = [];
+
+      if (books.length === 0) {
+        body.innerHTML = `<tr><td colspan="6">No books yet — add one above.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = books.map(b => `
+        <tr>
+          <td>${escapeHtml(b.title)}</td>
+          <td>${escapeHtml(b.author || '')}</td>
+          <td>${escapeHtml(b.category || '')}</td>
+          <td>${b.quantity ?? 0}</td>
+          <td>${b.isAvailable ? 'Available' : 'Checked out'}</td>
+          <td class="admin-actions">
+            <button class="btn btn-danger btn-sm" onclick="deleteBook('${b._id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="6">Couldn't load books.</td></tr>`;
+    }
+  }
+
+  async function deleteBook(bookId) {
+    if (!confirm('Remove this book from the shelf?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/books/${bookId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (!res.ok) { const d = await res.json(); showToast(d.message || 'Could not delete', 'error'); return; }
+      showToast('Book removed from the shelf.', 'success');
+      loadAdminTable();
+      loadBooks();
+    } catch (e) {
+      showToast('Could not reach the server.', 'error');
+    }
+  }
+
+  // ---------- Utils ----------
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // ---------- Init ----------
+  refreshAuthState();
+  loadBooks();
+  checkConnection();
+</script>
+
+</body>
+</html>
