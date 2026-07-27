@@ -1,6 +1,7 @@
 const Borrow = require('../models/borrow.model.js')
 const Book = require('../models/books.model');
 const calculateFine = require('../utils/calculateFine')
+const redisClient = require('../config/redis');
 const borrowBook = async (req, res, next) => {
   try {
     const { bookId } = req.body;
@@ -28,7 +29,7 @@ const borrowBook = async (req, res, next) => {
       status: 'borrowed',
       borrowDate: new Date()
     });
-
+    await redisClient.del('books');
     // NEW: send a response back
     return res.status(201).json({ message: "Book borrowed successfully", borrow: newBorrow });
 
@@ -60,6 +61,8 @@ const returnBook = async (req, res, next)=>{
             isAvailable: true,
             $inc: {quantity:1}
         })
+
+        await redisClient.del('books');
         res.status(200).json({message: "Book returned successfully", fine: fine})
          
     } catch(error){
