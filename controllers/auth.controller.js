@@ -15,6 +15,20 @@ function isStrongPassword(password){
     return hasMinLength && hasUppercase && hasNumber && hasSpecial;
 }
 
+function calculateAge(dobString){
+    const dob = new Date(dobString);
+    const today = new Date();
+
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    const dayDIff = today.getDate() - dob.getDate();
+
+    if (monthDiff<0 || (monthDiff === 0 && dayDiff<0)){
+        age = age -1;
+    }
+    return age;
+}
+
 const signup = async(req, res, next) => {
     try {
         const {name, email, username, password, DOB} = req.body
@@ -25,6 +39,17 @@ const signup = async(req, res, next) => {
         if(!isStrongPassword(password)){
             return res.status(400).json({message: "Invalid password: Minimum 8 characters, must contain uppercase, special character and number"})
         }
+        
+        const dobDate = new Date(DOB);
+        const today = new Date();
+        if(dobDate > today){
+            return res.status(400).json({message: "Invalid DOB can't be future date"})
+        }
+        const afe = calculateAge(DOB);
+        if(age < 12){
+            return res.status(400).json({message: "You must be at least 12 years old to sign up"});
+        }
+        
         const existingUser = await User.findOne({$or: [{email}, {username}]})
         if(existingUser){
             return res.status(400).json({message: "User already exists"})
