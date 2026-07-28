@@ -343,12 +343,6 @@
 
 <div class="toast-wrap" id="toastWrap"></div>
 
-<div class="config-banner">
-  <span>API BASE URL —</span>
-  <input type="text" id="apiBaseInput" value="http://localhost:5000/api" />
-  <span id="connStatus">not checked</span>
-</div>
-
 <header>
   <div class="brand">
     <h1>The Reading Room</h1>
@@ -473,11 +467,10 @@
 
 <script>
   // ---------- Config ----------
-  let API_BASE = document.getElementById('apiBaseInput').value;
-  document.getElementById('apiBaseInput').addEventListener('change', (e) => {
-    API_BASE = e.target.value.replace(/\/$/, '');
-    checkConnection();
-  });
+  // Since the frontend is now served by the same Express app as the API,
+  // we just use the current page's own origin — works locally AND once deployed,
+  // with no hardcoded localhost URL.
+  let API_BASE = window.location.origin + '/api';
 
   // ---------- State ----------
   let token = localStorage.getItem('lms_token') || null;
@@ -538,15 +531,13 @@
     s.style.display = s.style.display === 'none' ? 'block' : 'none';
   }
 
-  // ---------- Connection check ----------
+  // ---------- Connection check (logged to console only, no visible banner now) ----------
   async function checkConnection() {
-    const status = document.getElementById('connStatus');
-    status.textContent = 'checking...';
     try {
       const res = await fetch(`${API_BASE}/books`);
-      status.textContent = res.ok ? '● connected' : `● reachable (status ${res.status})`;
+      console.log(res.ok ? 'API reachable' : `API responded with status ${res.status}`);
     } catch (e) {
-      status.textContent = '● unreachable — check API base URL / CORS';
+      console.warn('API unreachable — check that the backend is running and serving this page.');
     }
   }
 
