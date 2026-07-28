@@ -39,13 +39,13 @@ const signup = async(req, res, next) => {
         if(!isStrongPassword(password)){
             return res.status(400).json({message: "Invalid password: Minimum 8 characters, must contain uppercase, special character and number"})
         }
-        
+
         const dobDate = new Date(DOB);
         const today = new Date();
         if(dobDate > today){
             return res.status(400).json({message: "Invalid DOB can't be future date"})
         }
-        const afe = calculateAge(DOB);
+        const age = calculateAge(DOB);
         if(age < 12){
             return res.status(400).json({message: "You must be at least 12 years old to sign up"});
         }
